@@ -71,7 +71,7 @@ def init_database():
 
 def current_slot_key():
     now = datetime.now(TIMEZONE)
-    return now.strftime("%Y-%m-%d-") + f"{(now.hour // 3) * 3:02d}"
+    return now.strftime("%Y-%m-%d-%H")
 
 
 def already_published(slot_key):
@@ -121,7 +121,7 @@ def generate_post():
 async def scheduled_job(bot):
     slot_key = current_slot_key()
     if already_published(slot_key):
-        log.info("این بازه سه‌ساعته قبلاً پست داشته؛ از انتشار تکراری جلوگیری شد.")
+        log.info("این بازه یک‌ساعته قبلاً پست داشته؛ از انتشار تکراری جلوگیری شد.")
         return
     log.info("شروع تولید پست برای بازه %s با مدل %s", slot_key, MODEL)
     try:
@@ -158,7 +158,7 @@ async def main():
         scheduler.add_job(
             scheduled_job,
             trigger="cron",
-            hour="*/3",
+            hour="*",
             minute=0,
             timezone=TIMEZONE,
             args=[bot],
@@ -169,7 +169,7 @@ async def main():
             misfire_grace_time=3600,
         )
         scheduler.start()
-        log.info("ربات فعال است؛ هر ۳ ساعت به وقت %s پست می‌گذارد.", TIMEZONE_NAME)
+        log.info("ربات فعال است؛ هر ساعت به وقت %s پست می‌گذارد.", TIMEZONE_NAME)
         try:
             while True:
                 await asyncio.sleep(60)
