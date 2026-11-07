@@ -126,9 +126,24 @@ async def scheduled_job(bot):
     log.info("شروع تولید پست برای بازه %s با مدل %s", slot_key, MODEL)
     try:
         content = await asyncio.to_thread(generate_post)
-        message = await bot.send_message(chat_id=CHANNEL_ID, text=content)
+        try:
+            from video_maker import create_video
+            video_path = await asyncio.to_thread(create_video, content)
+            try:
+                with open(video_path, "rb") as video_file:
+                    message = await bot.send_video(
+                        chat_id=CHANNEL_ID,
+                        video=video_file,
+                        caption=content[:1000],
+                        supports_streaming=True,
+                    )
+            finally:
+                Path(video_path).unlink(missing_ok=True)
+            log.info("ویدیو با موفقیت منتشر شد. message_id=%s", message.message_id)
+        except Exception:
+            log.exception("ساخت یا ارسال ویدیو ناموفق بود؛ ارسال متن انجام می‌شود.")
+            message = await bot.send_message(chat_id=CHANNEL_ID, text=content)
         mark_published(slot_key, message.message_id)
-        log.info("پست با موفقیت منتشر شد. message_id=%s", message.message_id)
     except Exception:
         log.exception("تولید یا انتشار پست ناموفق بود.")
 
