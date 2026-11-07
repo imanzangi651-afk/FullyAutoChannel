@@ -1,79 +1,117 @@
 import asyncio
-import bot
 from pathlib import Path
-from telegram import Bot
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
+import bot
 from video_maker import create_video, create_post_image
 
+POSTS = [
+"""🔐 امنیت کانال را جدی بگیر
+
+برای محافظت بهتر از کانال:
+• تأیید دومرحله‌ای را فعال کن.
+• دسترسی مدیران را فقط به افراد لازم بده.
+• لینک‌ها و فایل‌های ناشناس را باز نکن.
+
+امنیت خوب از عادت‌های کوچک شروع می‌شود.""",
+"""📌 نظم در انتشار محتوا
+
+برای داشتن یک کانال حرفه‌ای:
+• تقویم محتوایی هفتگی داشته باش.
+• موضوع پست‌ها را متنوع انتخاب کن.
+• زمان انتشار را ثابت نگه دار.
+• کیفیت را فدای تعداد نکن.
+
+مخاطب به محتوای مفید و منظم برمی‌گردد.""",
+"""💡 یک نکته برای مدیران کانال
+
+قبل از انتشار هر پست، این سه مورد را بررسی کن:
+۱. عنوان روشن و جذاب باشد.
+۲. متن کوتاه و قابل‌فهم باشد.
+۳. تصویر با موضوع هماهنگ باشد.
+
+جزئیات کوچک، تجربه مخاطب را بهتر می‌کنند.""",
+"""🚀 رشد اصولی کانال
+
+برای رشد پایدار:
+• مخاطب هدف خودت را بشناس.
+• محتوای کاربردی منتشر کن.
+• به بازخوردها توجه کن.
+• آمار بازدید و تعامل را بررسی کن.
+
+رشد واقعی با اعتماد ساخته می‌شود."""
+]
+
+PROMO = """🌐 NEOVO | مدیریت هوشمند کانال تلگرام
+
+انتشار دستی پست‌ها وقت‌گیر است؟ NEOVO به مدیریت منظم کانال کمک می‌کند.
+
+✨ خدمات:
+• زمان‌بندی و انتشار محتوا
+• مدیریت متن، تصویر و ویدئو
+• برنامه‌ریزی تبلیغات
+• دریافت سفارش از طریق ربات
+
+📩 مشاهده پلن‌ها و ثبت سفارش:
+https://t.me/Iman_Channel_Manager_Bot"""
 
 async def main():
-    bot.validate()
+    if not bot.TOKEN or not bot.CHANNEL_ID:
+        raise RuntimeError("TELEGRAM_TOKEN یا CHANNEL_ID تنظیم نشده است.")
     bot.init_database()
     slot_key = bot.current_slot_key()
-
-    force_video = ( __import__("os").getenv("FORCE_VIDEO", "").strip().lower() in ("1", "true", "yes") )
-    if bot.already_published(slot_key) and not force_video:
-        print("This 30-minute Iran-time slot has already been published.")
+    if bot.already_published(slot_key):
+        print("SLOT_ALREADY_PUBLISHED", slot_key)
         return
 
     now = bot.datetime.now(bot.TIMEZONE)
-    is_daily_promo = now.hour == 12 and now.minute < 30
-    content = await asyncio.to_thread(bot.generate_post)
-    video_path = None
     slot_number = now.hour * 2 + (now.minute // 30)
-    publish_video = force_video or (slot_number % 2 == 0)
+    content = POSTS[slot_number % len(POSTS)]
     async with Bot(bot.TOKEN) as client:
-        if publish_video:
+        if slot_number % 2 == 0:
+            media = await asyncio.to_thread(create_video, content)
             try:
-                video_path = await asyncio.to_thread(create_video, content)
-                caption = content if len(content) <= 1024 else content[:1000].rsplit(" ", 1)[0] + "…"
-                with open(video_path, "rb") as video_file:
-                    message = await client.send_video(chat_id=bot.CHANNEL_ID, video=video_file, caption=caption, supports_streaming=True)
-                print(f"Video published. Telegram message ID: {message.message_id}")
-            except Exception as exc:
-                print(f"Video failed; sending text instead: {exc}")
-                message = await client.send_message(chat_id=bot.CHANNEL_ID, text=content)
-            finally:
-                if video_path:
-                    Path(video_path).unlink(missing_ok=True)
-        else:
-            image_path = await asyncio.to_thread(create_post_image, content)
-            try:
-                with open(image_path, "rb") as image_file:
-                    message = await client.send_photo(chat_id=bot.CHANNEL_ID, photo=image_file, caption=content[:1024])
-                print(f"Text and image published. Telegram message ID: {message.message_id}")
-            finally:
-                Path(image_path).unlink(missing_ok=True)
-
-        if is_daily_promo:
-            promo = (
-                "🌐 طراحی سایت حرفه‌ای برای کسب‌وکار شما\n\n"
-                "می‌خواهید کسب‌وکارتان در اینترنت حضور حرفه‌ای‌تری داشته باشد؟\n"
-                "برای معرفی خدمات، نمایش نمونه‌کارها و ارتباط آسان با مشتریان، وب‌سایت اختصاصی داشته باشید.\n\n"
-                "📩 سفارش و مشاوره:\n"
-                "تلگرام: @iman_1258\n"
-                "تلفن: 09999571259\n\n"
-                "برای شروع، پیام بدهید تا درباره نیازهای وب‌سایتتان صحبت کنیم.\n"
-                "#طراحی_سایت #کسب_و_کار_آنلاین #وبسایت"
-            )
-            promo_image = await asyncio.to_thread(create_post_image, promo)
-            try:
-                with open(promo_image, "rb") as image_file:
-                    promo_message = await client.send_photo(
-                        chat_id=bot.CHANNEL_ID,
-                        photo=image_file,
-                        caption=promo[:1024],
-                        reply_markup={
-                            "inline_keyboard": [[
-                                {"text": "📝 ثبت سفارش طراحی سایت", "url": "https://t.me/Iman_Channel_Manager_Bot"}
-                            ]]
-                        },
+                with open(media, "rb") as f:
+                    message = await client.send_video(
+                        chat_id=bot.CHANNEL_ID, video=f, caption=content,
+                        supports_streaming=True
                     )
-                print(f"Daily website-design promotion with image published. Telegram message ID: {promo_message.message_id}")
+                print(f"VIDEO_PUBLISHED message_id={message.message_id}")
             finally:
-                Path(promo_image).unlink(missing_ok=True)
+                Path(media).unlink(missing_ok=True)
+        else:
+            image = await asyncio.to_thread(create_post_image, content)
+            try:
+                with open(image, "rb") as f:
+                    message = await client.send_photo(
+                        chat_id=bot.CHANNEL_ID, photo=f, caption=content
+                    )
+                print(f"PHOTO_TEXT_PUBLISHED message_id={message.message_id}")
+            finally:
+                Path(image).unlink(missing_ok=True)
+
+        if now.hour == 12 and now.minute < 30:
+            try:
+                promo_image = await asyncio.to_thread(
+                    create_post_image, "NEOVO channel management"
+                )
+                try:
+                    with open(promo_image, "rb") as f:
+                        promo_message = await client.send_photo(
+                            chat_id=bot.CHANNEL_ID, photo=f, caption=PROMO,
+                            reply_markup=InlineKeyboardMarkup([[
+                                InlineKeyboardButton(
+                                    "🤖 مشاهده ربات و ثبت سفارش",
+                                    url="https://t.me/Iman_Channel_Manager_Bot"
+                                )
+                            ]])
+                        )
+                    print(f"DAILY_PROMO_PUBLISHED message_id={promo_message.message_id}")
+                finally:
+                    Path(promo_image).unlink(missing_ok=True)
+            except Exception as exc:
+                print(f"DAILY_PROMO_FAILED {type(exc).__name__}: {exc}")
 
     bot.mark_published(slot_key, message.message_id)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
