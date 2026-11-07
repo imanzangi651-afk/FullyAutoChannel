@@ -10,7 +10,8 @@ async def main():
     bot.init_database()
     slot_key = bot.current_slot_key()
 
-    if bot.already_published(slot_key):
+    force_video = ( __import__("os").getenv("FORCE_VIDEO", "").strip().lower() in ("1", "true", "yes") )
+    if bot.already_published(slot_key) and not force_video:
         print("This 30-minute Iran-time slot has already been published.")
         return
 
@@ -19,7 +20,7 @@ async def main():
     content = await asyncio.to_thread(bot.generate_post)
     video_path = None
     slot_number = now.hour * 2 + (now.minute // 30)
-    publish_video = (slot_number % 2 == 0)
+    publish_video = force_video or (slot_number % 2 == 0)
     async with Bot(bot.TOKEN) as client:
         if publish_video:
             try:
