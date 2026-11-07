@@ -18,8 +18,10 @@ async def main():
     is_daily_promo = now.hour == 12 and now.minute == 0
     content = await asyncio.to_thread(bot.generate_post)
     video_path = None
+    slot_number = now.hour * 2 + (now.minute // 30)
+    publish_video = (slot_number % 2 == 0)
     async with Bot(bot.TOKEN) as client:
-        if now.hour % 2 == 0:
+        if publish_video:
             try:
                 video_path = await asyncio.to_thread(create_video, content)
                 caption = content if len(content) <= 1024 else content[:1000].rsplit(" ", 1)[0] + "…"
