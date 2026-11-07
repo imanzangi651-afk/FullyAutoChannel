@@ -15,7 +15,7 @@ async def main():
         return
 
     now = bot.datetime.now(bot.TIMEZONE)
-    is_daily_promo = now.hour == 12
+    is_daily_promo = now.hour == 12 and now.minute == 0
     content = await asyncio.to_thread(bot.generate_post)
     video_path = None
     async with Bot(bot.TOKEN) as client:
