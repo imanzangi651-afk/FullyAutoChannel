@@ -2,7 +2,7 @@ name: Telegram auto post
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -33,4 +33,4 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GROQ_BASE_URL: https://api.groq.com/openai/v1
           MODEL_NAME: openai/gpt-oss-20b
-          TIMEZONE: Europe/Amsterdam
+          TIMEZONE: Asia/Tehran
