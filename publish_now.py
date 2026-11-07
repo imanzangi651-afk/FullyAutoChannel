@@ -43,19 +43,28 @@ async def main():
 
         if is_daily_promo:
             promo = (
-                "🌐 طراحی سایت حرفه‌ای برای کسب‌وکار شما\\n\\n"
-                "می‌خواهید کسب‌وکارتان در اینترنت حضور حرفه‌ای‌تری داشته باشد؟\\n"
-                "برای معرفی خدمات، نمایش نمونه‌کارها و ارتباط آسان با مشتریان، وب‌سایت اختصاصی داشته باشید.\\n\\n"
-                "📩 سفارش و مشاوره:\\n"
-                "تلگرام: @iman_1258\\n"
-                "تلفن: 09999571259\\n\\n"
-                "برای شروع، پیام بدهید تا درباره نیازهای وب‌سایتتان صحبت کنیم.\\n"
+                "🌐 طراحی سایت حرفه‌ای برای کسب‌وکار شما\n\n"
+                "می‌خواهید کسب‌وکارتان در اینترنت حضور حرفه‌ای‌تری داشته باشد؟\n"
+                "برای معرفی خدمات، نمایش نمونه‌کارها و ارتباط آسان با مشتریان، وب‌سایت اختصاصی داشته باشید.\n\n"
+                "📩 سفارش و مشاوره:\n"
+                "تلگرام: @iman_1258\n"
+                "تلفن: 09999571259\n\n"
+                "برای شروع، پیام بدهید تا درباره نیازهای وب‌سایتتان صحبت کنیم.\n"
                 "#طراحی_سایت #کسب_و_کار_آنلاین #وبسایت"
             )
             promo_image = await asyncio.to_thread(create_post_image, promo)
             try:
                 with open(promo_image, "rb") as image_file:
-                    promo_message = await client.send_photo(chat_id=bot.CHANNEL_ID, photo=image_file, caption=promo[:1024])
+                    promo_message = await client.send_photo(
+                        chat_id=bot.CHANNEL_ID,
+                        photo=image_file,
+                        caption=promo[:1024],
+                        reply_markup={
+                            "inline_keyboard": [[
+                                {"text": "📝 ثبت سفارش طراحی سایت", "url": "https://t.me/Iman_Channel_Manager_Bot"}
+                            ]]
+                        },
+                    )
                 print(f"Daily website-design promotion with image published. Telegram message ID: {promo_message.message_id}")
             finally:
                 Path(promo_image).unlink(missing_ok=True)
