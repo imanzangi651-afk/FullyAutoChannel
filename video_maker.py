@@ -109,7 +109,7 @@ def create_video(post_text):
         lines = []
         for slide in slides:
             lines.append(f"file '{slide.as_posix()}'")
-            lines.append("duration 7")
+            lines.append("duration 10")
         lines.append(f"file '{slides[-1].as_posix()}'")
         concat_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
