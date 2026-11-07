@@ -16,25 +16,10 @@ async def main():
 
     now = bot.datetime.now(bot.TIMEZONE)
     is_daily_promo = now.hour == 12
-    if is_daily_promo:
-        content = (
-            "🌐 طراحی سایت حرفه‌ای برای کسب‌وکار شما\n\n"
-            "می‌خواهید کسب‌وکارتان در اینترنت حضور حرفه‌ای‌تری داشته باشد؟\n"
-            "برای معرفی خدمات، نمایش نمونه‌کارها و ارتباط آسان با مشتریان، وب‌سایت اختصاصی داشته باشید.\n\n"
-            "📩 سفارش و مشاوره:\n"
-            "تلگرام: @iman_1258\n"
-            "تلفن: 09999571259\n\n"
-            "برای شروع، پیام بدهید تا درباره نیازهای وب‌سایتتان صحبت کنیم.\n"
-            "#طراحی_سایت #کسب_و_کار_آنلاین #وبسایت"
-        )
-    else:
-        content = await asyncio.to_thread(bot.generate_post)
+    content = await asyncio.to_thread(bot.generate_post)
     video_path = None
     async with Bot(bot.TOKEN) as client:
-        if is_daily_promo:
-            message = await client.send_message(chat_id=bot.CHANNEL_ID, text=content)
-            print(f"Daily website-design promotion published. Telegram message ID: {message.message_id}")
-        elif now.hour % 2 == 0:
+        if now.hour % 2 == 0:
             try:
                 video_path = await asyncio.to_thread(create_video, content)
                 caption = content if len(content) <= 1024 else content[:1000].rsplit(" ", 1)[0] + "…"
@@ -50,6 +35,20 @@ async def main():
         else:
             message = await client.send_message(chat_id=bot.CHANNEL_ID, text=content)
             print(f"Text published. Telegram message ID: {message.message_id}")
+
+        if is_daily_promo:
+            promo = (
+                "🌐 طراحی سایت حرفه‌ای برای کسب‌وکار شما\\n\\n"
+                "می‌خواهید کسب‌وکارتان در اینترنت حضور حرفه‌ای‌تری داشته باشد؟\\n"
+                "برای معرفی خدمات، نمایش نمونه‌کارها و ارتباط آسان با مشتریان، وب‌سایت اختصاصی داشته باشید.\\n\\n"
+                "📩 سفارش و مشاوره:\\n"
+                "تلگرام: @iman_1258\\n"
+                "تلفن: 09999571259\\n\\n"
+                "برای شروع، پیام بدهید تا درباره نیازهای وب‌سایتتان صحبت کنیم.\\n"
+                "#طراحی_سایت #کسب_و_کار_آنلاین #وبسایت"
+            )
+            promo_message = await client.send_message(chat_id=bot.CHANNEL_ID, text=promo)
+            print(f"Daily website-design promotion published. Telegram message ID: {promo_message.message_id}")
 
     bot.mark_published(slot_key, message.message_id)
 
