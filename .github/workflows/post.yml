@@ -6,7 +6,9 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - ".github/workflows/post.yml"
+        - ".github/workflows/post.yml"
+        - "publish_now.py"
+        - "video_maker.py"
 
 permissions:
   contents: read
