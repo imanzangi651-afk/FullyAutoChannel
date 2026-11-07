@@ -19,7 +19,7 @@ CHANNEL_ID = os.getenv("CHANNEL_ID", "").strip()
 API_KEY = (os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY") or "").strip()
 BASE_URL = (os.getenv("GROQ_BASE_URL") or "https://api.groq.com/openai/v1").strip()
 MODEL = os.getenv("MODEL_NAME", "openai/gpt-oss-20b").strip()
-TIMEZONE_NAME = os.getenv("TIMEZONE", "Europe/Amsterdam").strip()
+TIMEZONE_NAME = os.getenv("TIMEZONE", "Asia/Tehran").strip()
 TIMEZONE = ZoneInfo(TIMEZONE_NAME)
 DB_PATH = ROOT / "data" / "published.sqlite3"
 
@@ -81,7 +81,8 @@ def init_database():
 
 def current_slot_key():
     now = datetime.now(TIMEZONE)
-    return now.strftime("%Y-%m-%d-%H")
+    minute_slot = (now.minute // 30) * 30
+    return now.strftime("%Y-%m-%d-%H-") + f"{minute_slot:02d}"
 
 
 def already_published(slot_key):
@@ -131,7 +132,7 @@ def generate_post():
 async def scheduled_job(bot):
     slot_key = current_slot_key()
     if already_published(slot_key):
-        log.info("این بازه یک‌ساعته قبلاً پست داشته؛ از انتشار تکراری جلوگیری شد.")
+        log.info("این بازه نیم‌ساعته قبلاً پست داشته؛ از انتشار تکراری جلوگیری شد.")
         return
     log.info("شروع تولید پست برای بازه %s با مدل %s", slot_key, MODEL)
     try:
@@ -168,18 +169,17 @@ async def main():
         scheduler.add_job(
             scheduled_job,
             trigger="cron",
-            hour="*",
-            minute=0,
+            minute="0,30",
             timezone=TIMEZONE,
             args=[bot],
-            id="three_hour_channel_post",
+            id="half_hour_channel_post",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
             misfire_grace_time=3600,
         )
         scheduler.start()
-        log.info("ربات فعال است؛ هر ساعت به وقت %s پست می‌گذارد.", TIMEZONE_NAME)
+        log.info("ربات فعال است؛ هر ۳۰ دقیقه به وقت %s پست می‌گذارد.", TIMEZONE_NAME)
         try:
             while True:
                 await asyncio.sleep(60)
