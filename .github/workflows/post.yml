@@ -46,3 +46,5 @@ jobs:
           FORCE_NEW_POST: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-new]') }}
 
 # [publish-new] publish a fresh AI technology post now
+
+# [publish-now] trigger one immediate channel post
