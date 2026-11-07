@@ -19,6 +19,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install video tools and Persian fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-noto-core
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Generate and publish one post
