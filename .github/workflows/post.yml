@@ -45,4 +45,4 @@ jobs:
           FORCE_VIDEO: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-video-now]') }}
           FORCE_NEW_POST: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-new]') }}
 
-# Manual publish request approved: [publish-now]
+# [publish-new] publish a fresh AI technology post now
