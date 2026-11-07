@@ -82,7 +82,7 @@ def init_database():
 
 def current_slot_key():
     now = datetime.now(TIMEZONE)
-    minute_slot = (now.minute // 10) * 10
+    minute_slot = (now.minute // 5) * 5
     return now.strftime("%Y-%m-%d-%H-") + f"{minute_slot:02d}"
 
 
@@ -133,13 +133,13 @@ def generate_post():
 async def scheduled_job(bot):
     slot_key = current_slot_key()
     if already_published(slot_key):
-        log.info("این بازه ۱۰ دقیقه‌ای قبلاً پست داشته؛ از انتشار تکراری جلوگیری شد.")
+        log.info("این بازه ۵ دقیقه‌ای قبلاً پست داشته؛ از انتشار تکراری جلوگیری شد.")
         return
     log.info("شروع تولید پست برای بازه %s با مدل %s", slot_key, MODEL)
     try:
         content = await asyncio.to_thread(generate_post)
         now = datetime.now(TIMEZONE)
-        slot_number = now.hour * 6 + (now.minute // 10)
+        slot_number = now.hour * 12 + (now.minute // 5)
         publish_video = (slot_number % 2 == 0)
 
         if publish_video:
@@ -195,17 +195,17 @@ async def main():
         scheduler.add_job(
             scheduled_job,
             trigger="cron",
-            minute="*/10",
+            minute="*/5",
             timezone=TIMEZONE,
             args=[bot],
-            id="ten_minute_channel_post",
+            id="five_minute_channel_post",
             replace_existing=True,
             max_instances=1,
             coalesce=True,
             misfire_grace_time=3600,
         )
         scheduler.start()
-        log.info("ربات فعال است؛ هر ۱۰ دقیقه به وقت %s پست می‌گذارد.", TIMEZONE_NAME)
+        log.info("ربات فعال است؛ هر ۵ دقیقه به وقت %s پست می‌گذارد.", TIMEZONE_NAME)
         try:
             while True:
                 await asyncio.sleep(60)
