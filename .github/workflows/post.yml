@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "0,30 * * * *"
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/post.yml"
 
 permissions:
   contents: read
@@ -14,6 +17,7 @@ concurrency:
 
 jobs:
   publish:
+    if: ${{ github.event_name != 'push' || contains(github.event.head_commit.message, '[publish-video-now]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -38,3 +42,4 @@ jobs:
           GROQ_BASE_URL: https://api.groq.com/openai/v1
           MODEL_NAME: openai/gpt-oss-20b
           TIMEZONE: Asia/Tehran
+          FORCE_VIDEO: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[publish-video-now]') }}
