@@ -11,7 +11,7 @@ async def main():
     slot_key = bot.current_slot_key()
 
     if bot.already_published(slot_key):
-        print("This three-hour slot has already been published.")
+        print("This 30-minute Iran-time slot has already been published.")
         return
 
     now = bot.datetime.now(bot.TIMEZONE)
