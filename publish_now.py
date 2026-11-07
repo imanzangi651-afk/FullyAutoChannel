@@ -76,7 +76,7 @@ async def main():
         return
 
     now = bot.datetime.now(bot.TIMEZONE)
-    slot_number = now.hour * 6 + (now.minute // 10)
+    slot_number = now.hour * 12 + (now.minute // 5)
     force_video = os.getenv('FORCE_VIDEO', '').lower() == 'true'
     content = POSTS[-1] if os.getenv('FORCE_NEW_POST', '').lower() == 'true' else POSTS[slot_number % len(POSTS)]
     async with Bot(bot.TOKEN) as client:
