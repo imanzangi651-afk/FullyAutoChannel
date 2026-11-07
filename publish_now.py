@@ -1,7 +1,7 @@
 import asyncio
 import os
 from pathlib import Path
-from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Bot
 import bot
 from video_maker import create_video, create_post_image
 
@@ -42,19 +42,6 @@ POSTS = [
 رشد واقعی با اعتماد ساخته می‌شود."""
 ]
 
-PROMO = """🌐 NEOVO | مدیریت هوشمند کانال تلگرام
-
-انتشار دستی پست‌ها وقت‌گیر است؟ NEOVO به مدیریت منظم کانال کمک می‌کند.
-
-✨ خدمات:
-• زمان‌بندی و انتشار محتوا
-• مدیریت متن، تصویر و ویدئو
-• برنامه‌ریزی تبلیغات
-• دریافت سفارش از طریق ربات
-
-📩 مشاهده پلن‌ها و ثبت سفارش:
-https://t.me/Iman_Channel_Manager_Bot"""
-
 async def main():
     if not bot.TOKEN or not bot.CHANNEL_ID:
         raise RuntimeError("TELEGRAM_TOKEN یا CHANNEL_ID تنظیم نشده است.")
@@ -65,7 +52,7 @@ async def main():
         return
 
     now = bot.datetime.now(bot.TIMEZONE)
-    slot_number = now.hour * 2 + (now.minute // 30)
+    slot_number = now.hour * 6 + (now.minute // 10)
     force_video = os.getenv('FORCE_VIDEO', '').lower() == 'true'
     content = POSTS[slot_number % len(POSTS)]
     async with Bot(bot.TOKEN) as client:
@@ -90,28 +77,6 @@ async def main():
                 print(f"PHOTO_TEXT_PUBLISHED message_id={message.message_id}")
             finally:
                 Path(image).unlink(missing_ok=True)
-
-        if now.hour == 12 and now.minute < 30:
-            try:
-                promo_image = await asyncio.to_thread(
-                    create_post_image, "NEOVO channel management"
-                )
-                try:
-                    with open(promo_image, "rb") as f:
-                        promo_message = await client.send_photo(
-                            chat_id=bot.CHANNEL_ID, photo=f, caption=PROMO,
-                            reply_markup=InlineKeyboardMarkup([[
-                                InlineKeyboardButton(
-                                    "🤖 مشاهده ربات و ثبت سفارش",
-                                    url="https://t.me/Iman_Channel_Manager_Bot"
-                                )
-                            ]])
-                        )
-                    print(f"DAILY_PROMO_PUBLISHED message_id={promo_message.message_id}")
-                finally:
-                    Path(promo_image).unlink(missing_ok=True)
-            except Exception as exc:
-                print(f"DAILY_PROMO_FAILED {type(exc).__name__}: {exc}")
 
     bot.mark_published(slot_key, message.message_id)
 
