@@ -127,3 +127,19 @@ def create_video(post_text):
             output.unlink(missing_ok=True)
             raise RuntimeError("ساخت ویدیو ناموفق بود: " + result.stderr[-1200:])
         return output
+
+def create_post_image(post_text):
+    """Create a branded square image summarizing a Persian text post."""
+    parts = _sentences(post_text)
+    heading = parts[0][:90] if parts else "دانستنی امروز"
+    body = " ".join(parts[1:]) if len(parts) > 1 else post_text
+    fd, output_name = tempfile.mkstemp(prefix="neovo_post_", suffix=".png")
+    os.close(fd)
+    output = Path(output_name)
+    try:
+        _draw_scene(output, heading, body[:260], 1, 1)
+        return output
+    except Exception:
+        output.unlink(missing_ok=True)
+        raise
+
