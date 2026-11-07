@@ -41,16 +41,14 @@ def _wrap(draw, text, font, max_width):
 
 
 def _sentences(text):
-    cleaned = re.sub(r"https?://\\S+", "", text)
-    parts = [p.strip(" \n•-*") for p in re.split(r"(?<=[.!؟?])\\s+|\\n+", cleaned) if p.strip()]
+    cleaned = re.sub(r"https?://\S+", "", text)
+    parts = [p.strip(" \n•-*") for p in re.split(r"(?<=[.!؟?])\s+|\n+", cleaned) if p.strip()]
     return parts or [cleaned[:180]]
 
 
 def _draw_scene(path, heading, body, index, total):
     image = Image.new("RGB", (WIDTH, HEIGHT), BG)
     draw = ImageDraw.Draw(image)
-
-    # Subtle neon frame and decorative circuitry.
     draw.rounded_rectangle((24, 24, WIDTH - 24, HEIGHT - 24), radius=34, outline=CYAN, width=3)
     draw.ellipse((WIDTH - 180, 70, WIDTH + 70, 320), outline=(0, 80, 115), width=4)
     draw.ellipse((-120, HEIGHT - 300, 150, HEIGHT - 30), outline=(0, 80, 115), width=4)
@@ -63,17 +61,14 @@ def _draw_scene(path, heading, body, index, total):
 
     draw.text((WIDTH // 2, 107), "NEOVO  |  دنیای هوشمند", font=brand_font, fill=CYAN,
               anchor="mm", direction="rtl", language="fa")
-
     title = _wrap(draw, heading, heading_font, WIDTH - 130)
     draw.multiline_text((WIDTH // 2, 310), title, font=heading_font, fill=GOLD,
                         anchor="mm", align="center", spacing=18, direction="rtl", language="fa")
-
     body_wrapped = _wrap(draw, body, body_font, WIDTH - 140)
     draw.rounded_rectangle((65, 485, WIDTH - 65, 1010), radius=30,
                            fill=(9, 24, 44), outline=(0, 105, 140), width=2)
     draw.multiline_text((WIDTH // 2, 745), body_wrapped, font=body_font, fill=WHITE,
                         anchor="mm", align="center", spacing=22, direction="rtl", language="fa")
-
     draw.line((110, 1090, WIDTH - 110, 1090), fill=CYAN, width=3)
     draw.text((WIDTH // 2, 1150), "یاد بگیر • کشف کن • پیشرفت کن",
               font=small_font, fill=CYAN, anchor="mm", direction="rtl", language="fa")
@@ -91,12 +86,10 @@ def create_video(post_text):
     parts = _sentences(post_text)
     heading = parts[0][:100] if parts else "دانستنی امروز"
     body_parts = parts[1:] or parts
-    # Split into up to three readable scenes.
     scenes = []
-    chunks = 3
-    for i in range(chunks):
-        start = round(i * len(body_parts) / chunks)
-        end = round((i + 1) * len(body_parts) / chunks)
+    for i in range(3):
+        start = round(i * len(body_parts) / 3)
+        end = round((i + 1) * len(body_parts) / 3)
         segment = " ".join(body_parts[start:end]).strip()
         if segment:
             scenes.append(segment[:420])
@@ -118,7 +111,7 @@ def create_video(post_text):
             lines.append(f"file '{slide.as_posix()}'")
             lines.append("duration 7")
         lines.append(f"file '{slides[-1].as_posix()}'")
-        concat_file.write_text("\\n".join(lines) + "\\n", encoding="utf-8")
+        concat_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
         fd, output_name = tempfile.mkstemp(prefix="neovo_", suffix=".mp4")
         os.close(fd)
