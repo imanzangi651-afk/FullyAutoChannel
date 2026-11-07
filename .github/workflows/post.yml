@@ -2,7 +2,7 @@ name: Telegram auto post
 
 on:
   schedule:
-    - cron: "0 */3 * * *"
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 permissions:
