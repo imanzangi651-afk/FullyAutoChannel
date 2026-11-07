@@ -2,7 +2,7 @@ name: Telegram auto post
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
   push:
     paths:
@@ -19,7 +19,7 @@ jobs:
   publish:
     if: ${{ github.event_name != 'push' || contains(github.event.head_commit.message, '[publish-video-now]') || contains(github.event.head_commit.message, '[publish-now]') || contains(github.event.head_commit.message, '[publish-new]') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
