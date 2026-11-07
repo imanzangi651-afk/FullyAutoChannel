@@ -137,23 +137,48 @@ async def scheduled_job(bot):
     log.info("شروع تولید پست برای بازه %s با مدل %s", slot_key, MODEL)
     try:
         content = await asyncio.to_thread(generate_post)
-        try:
-            from video_maker import create_video
-            video_path = await asyncio.to_thread(create_video, content)
+        now = datetime.now(TIMEZONE)
+        slot_number = now.hour * 2 + (now.minute // 30)
+        publish_video = (slot_number % 2 == 0)
+
+        if publish_video:
+            media_path = None
             try:
-                with open(video_path, "rb") as video_file:
+                from video_maker import create_video
+                media_path = await asyncio.to_thread(create_video, content)
+                with open(media_path, "rb") as media_file:
                     message = await bot.send_video(
                         chat_id=CHANNEL_ID,
-                        video=video_file,
+                        video=media_file,
                         caption=content[:1000],
                         supports_streaming=True,
                     )
+                log.info("ویدیو با موفقیت منتشر شد. message_id=%s", message.message_id)
+            except Exception:
+                log.exception("ساخت یا ارسال ویدیو ناموفق بود؛ ارسال متن انجام می‌شود.")
+                message = await bot.send_message(chat_id=CHANNEL_ID, text=content)
             finally:
-                Path(video_path).unlink(missing_ok=True)
-            log.info("ویدیو با موفقیت منتشر شد. message_id=%s", message.message_id)
-        except Exception:
-            log.exception("ساخت یا ارسال ویدیو ناموفق بود؛ ارسال متن انجام می‌شود.")
-            message = await bot.send_message(chat_id=CHANNEL_ID, text=content)
+                if media_path:
+                    Path(media_path).unlink(missing_ok=True)
+        else:
+            media_path = None
+            try:
+                from video_maker import create_post_image
+                media_path = await asyncio.to_thread(create_post_image, content)
+                with open(media_path, "rb") as media_file:
+                    message = await bot.send_photo(
+                        chat_id=CHANNEL_ID,
+                        photo=media_file,
+                        caption=content[:1000],
+                    )
+                log.info("متن همراه عکس با موفقیت منتشر شد. message_id=%s", message.message_id)
+            except Exception:
+                log.exception("ساخت یا ارسال عکس ناموفق بود؛ ارسال متن انجام می‌شود.")
+                message = await bot.send_message(chat_id=CHANNEL_ID, text=content)
+            finally:
+                if media_path:
+                    Path(media_path).unlink(missing_ok=True)
+
         mark_published(slot_key, message.message_id)
     except Exception:
         log.exception("تولید یا انتشار پست ناموفق بود.")
