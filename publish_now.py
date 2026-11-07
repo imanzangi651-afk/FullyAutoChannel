@@ -1,4 +1,5 @@
 import asyncio
+import os
 from pathlib import Path
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 import bot
@@ -65,9 +66,10 @@ async def main():
 
     now = bot.datetime.now(bot.TIMEZONE)
     slot_number = now.hour * 2 + (now.minute // 30)
+    force_video = os.getenv('FORCE_VIDEO', '').lower() == 'true'
     content = POSTS[slot_number % len(POSTS)]
     async with Bot(bot.TOKEN) as client:
-        if slot_number % 2 == 0:
+        if force_video or slot_number % 2 == 0:
             media = await asyncio.to_thread(create_video, content)
             try:
                 with open(media, "rb") as f:
