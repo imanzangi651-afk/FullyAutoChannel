@@ -2,11 +2,15 @@ name: Telegram auto post
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0,30 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: neovo-channel-publishing
+  cancel-in-progress: false
 
 jobs:
   publish:
