@@ -78,7 +78,7 @@ async def main():
     now = bot.datetime.now(bot.TIMEZONE)
     slot_number = now.hour * 12 + (now.minute // 5)
     force_video = os.getenv('FORCE_VIDEO', '').lower() == 'true'
-    content = POSTS[-1] if os.getenv('FORCE_NEW_POST', '').lower() == 'true' else POSTS[slot_number % len(POSTS)]
+    content = POSTS[-1] if (os.getenv('FORCE_NEW_POST', '').lower() == 'true' or os.getenv('FORCE_VIDEO', '').lower() == 'true') else POSTS[slot_number % len(POSTS)]
     async with Bot(bot.TOKEN) as client:
         if force_video or slot_number % 2 == 0:
             media = await asyncio.to_thread(create_video, content)
