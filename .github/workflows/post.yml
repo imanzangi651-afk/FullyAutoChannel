@@ -1,4 +1,5 @@
 name: Telegram auto post
+# One-time video trigger: commit message tag [publish-video-now]
 
 on:
   schedule:
