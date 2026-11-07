@@ -1,145 +1,71 @@
-import os
-import re
-import shutil
-import subprocess
-import tempfile
+import shutil, subprocess, tempfile
 from pathlib import Path
-
 from PIL import Image, ImageDraw, ImageFont
 
-WIDTH, HEIGHT = 720, 1280
-BG = (5, 12, 27)
-CYAN = (0, 220, 255)
-GOLD = (255, 190, 55)
-WHITE = (242, 248, 255)
+W, H = 720, 1280
+BG, CYAN, GOLD, WHITE = (5,12,27), (0,220,255), (255,190,55), (242,248,255)
 
-
-def _font(size):
-    candidates = [
-        "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ]
-    for candidate in candidates:
-        if Path(candidate).exists():
-            return ImageFont.truetype(candidate, size)
+def font(size, bold=False):
+    names = ["arialbd.ttf" if bold else "arial.ttf", "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf"]
+    candidates = [Path(r"C:\Windows\Fonts") / names[0],
+                  Path("/usr/share/fonts/truetype/dejavu") / names[1],
+                  Path("/usr/share/fonts/truetype/noto") / ("NotoSans-Bold.ttf" if bold else "NotoSans-Regular.ttf")]
+    for p in candidates:
+        try:
+            if p.exists(): return ImageFont.truetype(str(p), size)
+        except Exception: pass
     return ImageFont.load_default()
 
+def center(draw, y, text, fnt, color, spacing=18):
+    draw.multiline_text((W//2,y), text, font=fnt, fill=color, anchor="mm", align="center", spacing=spacing)
 
-def _wrap(draw, text, font, max_width):
-    words = text.split()
-    lines, current = [], ""
-    for word in words:
-        trial = f"{current} {word}".strip()
-        if current and draw.textlength(trial, font=font, direction="rtl", language="fa") > max_width:
-            lines.append(current)
-            current = word
-        else:
-            current = trial
-    if current:
-        lines.append(current)
-    return "\n".join(lines)
+def make_slide(path, title, body, number):
+    im = Image.new("RGB", (W,H), BG); d = ImageDraw.Draw(im)
+    d.rounded_rectangle((22,22,W-22,H-22), radius=34, outline=CYAN, width=3)
+    d.ellipse((W-190,65,W+60,315), outline=(0,75,110), width=5)
+    d.ellipse((-130,H-300,155,H-15), outline=(0,75,110), width=5)
+    d.rounded_rectangle((52,65,W-52,145), radius=20, fill=(10,29,52), outline=(0,115,150), width=2)
+    center(d,105,"NEOVO  |  SMART CHANNEL MANAGEMENT",font(25,True),CYAN)
+    center(d,300,title,font(47,True),GOLD,22)
+    d.rounded_rectangle((60,465,W-60,1010),radius=28,fill=(9,24,44),outline=(0,105,140),width=2)
+    center(d,735,body,font(36),WHITE,26)
+    d.line((105,1090,W-105,1090),fill=CYAN,width=3)
+    center(d,1150,"PLAN  •  PUBLISH  •  GROW",font(26,True),CYAN)
+    center(d,1210,f"{number:02d} / 03",font(24,True),GOLD)
+    im.save(path,"PNG")
 
+def _ffmpeg_path():
+    found=shutil.which("ffmpeg")
+    if found: return found
+    candidates=[
+      Path(__file__).resolve().parent/"node_modules"/"@ffmpeg-installer"/"win32-x64"/"ffmpeg.exe",
+      Path.home()/"node_modules"/"@ffmpeg-installer"/"win32-x64"/"ffmpeg.exe"
+    ]
+    for candidate in candidates:
+        if candidate.exists(): return str(candidate)
+    raise RuntimeError("FFmpeg is not installed or not on PATH.")
 
-def _sentences(text):
-    cleaned = re.sub(r"https?://\S+", "", text)
-    parts = [p.strip(" \n•-*") for p in re.split(r"(?<=[.!؟?])\s+|\n+", cleaned) if p.strip()]
-    return parts or [cleaned[:180]]
-
-
-def _draw_scene(path, heading, body, index, total):
-    image = Image.new("RGB", (WIDTH, HEIGHT), BG)
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((24, 24, WIDTH - 24, HEIGHT - 24), radius=34, outline=CYAN, width=3)
-    draw.ellipse((WIDTH - 180, 70, WIDTH + 70, 320), outline=(0, 80, 115), width=4)
-    draw.ellipse((-120, HEIGHT - 300, 150, HEIGHT - 30), outline=(0, 80, 115), width=4)
-    draw.rounded_rectangle((54, 72, WIDTH - 54, 142), radius=22, fill=(10, 29, 52), outline=(0, 115, 150), width=2)
-
-    brand_font = _font(30)
-    heading_font = _font(54)
-    body_font = _font(39)
-    small_font = _font(25)
-
-    draw.text((WIDTH // 2, 107), "NEOVO  |  دنیای هوشمند", font=brand_font, fill=CYAN,
-              anchor="mm", direction="rtl", language="fa")
-    title = _wrap(draw, heading, heading_font, WIDTH - 130)
-    draw.multiline_text((WIDTH // 2, 310), title, font=heading_font, fill=GOLD,
-                        anchor="mm", align="center", spacing=18, direction="rtl", language="fa")
-    body_wrapped = _wrap(draw, body, body_font, WIDTH - 140)
-    draw.rounded_rectangle((65, 485, WIDTH - 65, 1010), radius=30,
-                           fill=(9, 24, 44), outline=(0, 105, 140), width=2)
-    draw.multiline_text((WIDTH // 2, 745), body_wrapped, font=body_font, fill=WHITE,
-                        anchor="mm", align="center", spacing=22, direction="rtl", language="fa")
-    draw.line((110, 1090, WIDTH - 110, 1090), fill=CYAN, width=3)
-    draw.text((WIDTH // 2, 1150), "یاد بگیر • کشف کن • پیشرفت کن",
-              font=small_font, fill=CYAN, anchor="mm", direction="rtl", language="fa")
-    draw.text((WIDTH // 2, 1210), f"{index:02d} / {total:02d}",
-              font=small_font, fill=GOLD, anchor="mm")
-    image.save(path, "PNG")
-
-
-def create_video(post_text):
-    """Create a short silent vertical slideshow video from the generated Persian post."""
-    ffmpeg = shutil.which("ffmpeg")
-    if not ffmpeg:
-        raise RuntimeError("ffmpeg is not installed")
-
-    parts = _sentences(post_text)
-    heading = parts[0][:100] if parts else "دانستنی امروز"
-    body_parts = parts[1:] or parts
-    scenes = []
-    for i in range(3):
-        start = round(i * len(body_parts) / 3)
-        end = round((i + 1) * len(body_parts) / 3)
-        segment = " ".join(body_parts[start:end]).strip()
-        if segment:
-            scenes.append(segment[:420])
-    if not scenes:
-        scenes = [post_text[:420]]
-    scenes = scenes[:3]
-
-    with tempfile.TemporaryDirectory(prefix="neovo_video_") as workdir:
-        work = Path(workdir)
-        slides = []
-        for i, body in enumerate(scenes, start=1):
-            slide = work / f"slide_{i:02d}.png"
-            _draw_scene(slide, heading if i == 1 else f"نکته {i}", body, i, len(scenes))
-            slides.append(slide)
-
-        concat_file = work / "slides.txt"
-        lines = []
-        for slide in slides:
-            lines.append(f"file '{slide.as_posix()}'")
-            lines.append("duration 10")
-        lines.append(f"file '{slides[-1].as_posix()}'")
-        concat_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-        fd, output_name = tempfile.mkstemp(prefix="neovo_", suffix=".mp4")
-        os.close(fd)
-        output = Path(output_name)
-        command = [
-            ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(concat_file),
-            "-vf", "scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2,format=yuv420p",
-            "-r", "24", "-c:v", "libx264", "-preset", "ultrafast",
-            "-movflags", "+faststart", "-an", str(output),
-        ]
-        result = subprocess.run(command, capture_output=True, text=True, timeout=120)
-        if result.returncode != 0:
-            output.unlink(missing_ok=True)
-            raise RuntimeError("ساخت ویدیو ناموفق بود: " + result.stderr[-1200:])
-        return output
+def create_video(post_text=None):
+    ffmpeg=_ffmpeg_path()
+    scenes=[
+      ("PROTECT YOUR CHANNEL","Use strong passwords\nEnable two-step verification\nReview admin access regularly"),
+      ("PUBLISH WITH A PLAN","Prepare content in advance\nKeep text and visuals consistent\nFocus on quality and clarity"),
+      ("MEET NEOVO","Scheduled channel publishing\nText, image and video management\nSimple order and support bot")
+    ]
+    with tempfile.TemporaryDirectory(prefix="neovo_video_") as td:
+      folder=Path(td); entries=[]
+      for i,(title,body) in enumerate(scenes,1):
+        p=folder/f"slide_{i}.png"; make_slide(p,title,body,i)
+        entries += [f"file '{p.as_posix()}'","duration 7"]
+      entries.append(f"file '{(folder/'slide_3.png').as_posix()}'")
+      concat=folder/"slides.txt"; concat.write_text("\n".join(entries)+"\n",encoding="utf-8")
+      out=Path.cwd()/"NEOVO_video_now.mp4"
+      cmd=[ffmpeg,"-y","-f","concat","-safe","0","-i",str(concat),"-vf","scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2,format=yuv420p","-r","24","-c:v","libx264","-preset","ultrafast","-movflags","+faststart","-an",str(out)]
+      result=subprocess.run(cmd,capture_output=True,text=True,timeout=120)
+      if result.returncode: raise RuntimeError(result.stderr[-1500:])
+      return out
 
 def create_post_image(post_text):
-    """Create a branded square image summarizing a Persian text post."""
-    parts = _sentences(post_text)
-    heading = parts[0][:90] if parts else "دانستنی امروز"
-    body = " ".join(parts[1:]) if len(parts) > 1 else post_text
-    fd, output_name = tempfile.mkstemp(prefix="neovo_post_", suffix=".png")
-    os.close(fd)
-    output = Path(output_name)
-    try:
-        _draw_scene(output, heading, body[:260], 1, 1)
-        return output
-    except Exception:
-        output.unlink(missing_ok=True)
-        raise
-
+    path=Path.cwd()/"NEOVO_post_image.png"
+    make_slide(path,"CHANNEL MANAGEMENT","Plan your posts\nKeep your audience informed\nBuild trust with consistency",1)
+    return path
