@@ -2,7 +2,7 @@ import asyncio
 import bot
 from pathlib import Path
 from telegram import Bot
-from video_maker import create_video
+from video_maker import create_video, create_post_image
 
 
 async def main():
@@ -33,8 +33,13 @@ async def main():
                 if video_path:
                     Path(video_path).unlink(missing_ok=True)
         else:
-            message = await client.send_message(chat_id=bot.CHANNEL_ID, text=content)
-            print(f"Text published. Telegram message ID: {message.message_id}")
+            image_path = await asyncio.to_thread(create_post_image, content)
+            try:
+                with open(image_path, "rb") as image_file:
+                    message = await client.send_photo(chat_id=bot.CHANNEL_ID, photo=image_file, caption=content[:1024])
+                print(f"Text and image published. Telegram message ID: {message.message_id}")
+            finally:
+                Path(image_path).unlink(missing_ok=True)
 
         if is_daily_promo:
             promo = (
@@ -47,8 +52,13 @@ async def main():
                 "برای شروع، پیام بدهید تا درباره نیازهای وب‌سایتتان صحبت کنیم.\\n"
                 "#طراحی_سایت #کسب_و_کار_آنلاین #وبسایت"
             )
-            promo_message = await client.send_message(chat_id=bot.CHANNEL_ID, text=promo)
-            print(f"Daily website-design promotion published. Telegram message ID: {promo_message.message_id}")
+            promo_image = await asyncio.to_thread(create_post_image, promo)
+            try:
+                with open(promo_image, "rb") as image_file:
+                    promo_message = await client.send_photo(chat_id=bot.CHANNEL_ID, photo=image_file, caption=promo[:1024])
+                print(f"Daily website-design promotion with image published. Telegram message ID: {promo_message.message_id}")
+            finally:
+                Path(promo_image).unlink(missing_ok=True)
 
     bot.mark_published(slot_key, message.message_id)
 
